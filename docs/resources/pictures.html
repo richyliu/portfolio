@@ -157,9 +157,6 @@
                             </li>
                         </ul>
                     </li>
-                    <li id="nav-user-status">
-                        <a onclick="window.location.href = '/logout.html?redir=' + encodeURIComponent(window.location.pathname + window.location.search + window.location.hash);">Logout</a>
-                    </li>
 
                 </ul>
 
@@ -173,13 +170,25 @@
 <div class="container" id="content">
 
     <div class="row">
-        <div class="box">
+        <div class="box col-md-12" id="auth">
+            <hr>
+            <h2 class="intro-text text-center">Pictures</h2>
+            <hr>
+            <p><b>Enter the password to view this page:</b></p>
+            <input class="form-control" type="password" id="auth__password-input"/>
+            <button class="btn btn-block btn-primary" id="auth__submit">Submit</button>
+            <p class="text-danger" id="auth__error"></p>
+            <p>The password is the same as the password to the directory, and is pinned to #general on slack.
+            </p>
+        </div>
+        <div class="box content hidden">
             <div class="col-lg-12">
                 <hr>
                 <h2 class="intro-text text-center">Pictures</h2>
                 <hr>
             </div>
             <div class="col-md-12">
+                <p><a onclick="window.location.reload()">Logout</a></p>
                 <!--googleoff: all-->
                 <p>Google Photos</p>
                 <p>
@@ -465,8 +474,34 @@
      
     <script src="/js/scripts.min.js"></script>
     
+<script src="../js/crypto.min.js"></script>
 <script>
+    $("#auth__password-input").on('keypress',function(e) {
+        if(e.which === 13) {
+            $("#auth__submit").click();
+        }
+    });
 
+    $("#auth__submit").click((e) => {
+        e.preventDefault();
+        let password = $("#auth__password-input").val();
+        const salt = "pTXA8vnHm";
+        // yes, it's not secure to list the hashed passwords here, but this is meant to provide temporary and basic discouragement
+        // to viewing the page, not absolute security.
+        const hashedUserPassword = CryptoJS.enc.Hex.stringify(CryptoJS.SHA3(password + salt, { outputLength: 256 }));
+        const hashedExpectedPassword = "c3431e1fc2ee61a90f396bd35eaa5c6af0642cf43027d9e3f04df3319a7ea4c8";
+        console.log(hashedUserPassword)
+
+        if (hashedUserPassword === hashedExpectedPassword) {
+            $(".content").removeClass("hidden");
+            $("#auth__error").text("");
+            $("#auth").addClass("hidden");
+        } else {
+            $("#auth__password-input").val("");
+            $("#auth__error").text("Error: incorrect password.");
+        }
+
+    })
 </script>
 
 </body>
