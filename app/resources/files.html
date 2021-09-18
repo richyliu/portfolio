@@ -18,7 +18,7 @@
                 <hr>
                 <h2 class="intro-text text-center">Files</h2>
                 <hr>
-                <p><a onclick="window.location.reload()">Logout</a></p>
+                <p><a onclick="localStorage.removeItem('auth'); window.location.reload()">Logout</a></p>
                 <ul id="files-box">
                     <li>
                         <a href="#" onclick="openModal(this, 'https://docs.google.com/document/d/1IC1fttf7tEZhezKfNKs0ADtHOQjgyBcMSqjQ_75zUKk/mobilebasic');">Council and District information</a>
@@ -118,6 +118,17 @@
         }
     });
 
+    const hashedExpectedPassword = "c3431e1fc2ee61a90f396bd35eaa5c6af0642cf43027d9e3f04df3319a7ea4c8";
+    $(document).ready(() => {
+        const authHash = localStorage.getItem("auth");
+        if (authHash && authHash === hashedExpectedPassword) {
+            $(".content").removeClass("hidden");
+            $("#auth__error").text("");
+            $("#auth").addClass("hidden");
+            init();
+        }
+    });
+
     $("#auth__submit").click((e) => {
         e.preventDefault();
         let password = $("#auth__password-input").val();
@@ -125,13 +136,13 @@
         // yes, it's not secure to list the hashed passwords here, but this is meant to provide temporary and basic discouragement
         // to viewing the page, not absolute security.
         const hashedUserPassword = CryptoJS.enc.Hex.stringify(CryptoJS.SHA3(password + salt, { outputLength: 256 }));
-        const hashedExpectedPassword = "c3431e1fc2ee61a90f396bd35eaa5c6af0642cf43027d9e3f04df3319a7ea4c8";
         console.log(hashedUserPassword)
 
         if (hashedUserPassword === hashedExpectedPassword) {
             $(".content").removeClass("hidden");
             $("#auth__error").text("");
             $("#auth").addClass("hidden");
+            localStorage.setItem("auth", hashedUserPassword)
             init();
         } else {
             $("#auth__password-input").val("");
