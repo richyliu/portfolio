@@ -153,7 +153,7 @@
 
 
     function init() {
-        function openModal(e, url, name) {
+        window.openModal = function (e, url, name) {
 
             let title;
             if (name === undefined && e !== undefined) {
@@ -168,7 +168,7 @@
             $('#myModal').modal('show');
         }
 
-        function requestFullScreen() {
+        window.requestFullScreen = function () {
             let el = document.getElementById("ifr");
             // Supports most browsers and their versions.
             let requestMethod = el.requestFullScreen || el.webkitRequestFullScreen || el.mozRequestFullScreen || el.msRequestFullScreen;
