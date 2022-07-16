@@ -2,13 +2,23 @@
 <div class="container" id="main">
 
     <div class="row">
-
-        <div class="box col-md-12">
+        <div class="box col-md-12" id="auth">
+            <hr>
+            <h2 class="intro-text text-center">Files</h2>
+            <hr>
+            <p><b>Enter the password to view this page:</b></p>
+            <input class="form-control" type="password" id="auth__password-input"/>
+            <button class="btn btn-block btn-primary" id="auth__submit">Submit</button>
+            <p class="text-danger" id="auth__error"></p>
+            <p>The password is the same as the password to the directory, and is pinned to #general on slack.
+            </p>
+        </div>
+        <div class="box col-md-12 hidden content">
             <div id="resource-list">
                 <hr>
                 <h2 class="intro-text text-center">Files</h2>
                 <hr>
-
+                <p><a onclick="localStorage.removeItem('auth'); window.location.reload()">Logout</a></p>
                 <ul id="files-box">
                     <li>
                         <a href="#" onclick="openModal(this, 'https://docs.google.com/document/d/1IC1fttf7tEZhezKfNKs0ADtHOQjgyBcMSqjQ_75zUKk/mobilebasic');">Council and District information</a>
@@ -46,7 +56,7 @@
 
 
 
-    <div class="row">
+    <div class="row content hidden">
         <div class="box col-md-12">
             <hr>
             <h2 class="intro-text text-center">Add
@@ -93,6 +103,7 @@
     <!-- /.modal-dialog -->
 </div>
 {% endblock %} {% block js %}
+<script src="{{basepath}}js/crypto.min.js"></script>
 <script>
     /* global firebase $ auth */
 
@@ -101,63 +112,102 @@
         return target.split(search).join(replacement);
     };
 
-
-
-
-    function openModal(e, url, name) {
-
-        let title;
-        if (name === undefined && e !== undefined) {
-            title = (e.tagName === 'A' ? title = e.innerHTML : e.attributes.alt.nodeValue);
+    $("#auth__password-input").on('keypress',function(e) {
+        if(e.which === 13) {
+            $("#auth__submit").click();
         }
-        else {
-            title = name;
-        }
-        $('#myModalLabel').html(title);
-        $('#ifr').attr('src', url);
-        $('#mdlk').attr('href', url.replace("/mobilebasic", "/"));
-        $('#myModal').modal('show');
-    }
-
-    function requestFullScreen() {
-        let el = document.getElementById("ifr");
-        // Supports most browsers and their versions.
-        let requestMethod = el.requestFullScreen || el.webkitRequestFullScreen || el.mozRequestFullScreen || el.msRequestFullScreen;
-
-        if (requestMethod) {
-            requestMethod.call(el);
-            // Older IE.
-        }
-        else if (typeof window.ActiveXObject !== "undefined") {
-            let wscript = new ActiveXObject("WScript.Shell");
-
-            if (wscript !== null) {
-                wscript.SendKeys("{F11}");
-            }
-        }
-    }
-    $("#upload-file-btn").click(() => {
-        let url = $("#upload-file-url").val();
-        let name = $("#upload-file-name").val();
-        let el;
-        if (url.match(/^(https:\/\/((docs\.google\.com\/document\/d\/.+\/.*)?)|(https:\/\/.+\..+.+\.pdf))$/g)) {
-            el = encodeURIComponent('<li><a onclick="openModal(this, ' + "'" + url.replace("/edit", "/moiblebasic") + "'" + ')">' + name + '</a></li>');
-        }
-        else {
-            el = encodeURIComponent('<li><a href="' + url + '">' + name + "</a></li>");
-        }
-
-        firebase.database().ref("/files/").push(el);
-        window.location.href = window.location.href;
     });
-    firebase.database().ref("/files/").once("value").then((snapshot) => {
-        let data = snapshot.val();
-        for (let key in data) {
-            if (data.hasOwnProperty(key)) {
-                console.log(data[key]);
-                //TODO: fix XSS risk
-                $("#files-box").append($(decodeURIComponent(data[key])).attr("target", "_blank"))
+
+    const hashedExpectedPassword = "c3431e1fc2ee61a90f396bd35eaa5c6af0642cf43027d9e3f04df3319a7ea4c8";
+    $(document).ready(() => {
+        const authHash = localStorage.getItem("auth");
+        if (authHash && authHash === hashedExpectedPassword) {
+            $(".content").removeClass("hidden");
+            $("#auth__error").text("");
+            $("#auth").addClass("hidden");
+            init();
+        }
+    });
+
+    $("#auth__submit").click((e) => {
+        e.preventDefault();
+        let password = $("#auth__password-input").val();
+        const salt = "pTXA8vnHm";
+        // yes, it's not secure to list the hashed passwords here, but this is meant to provide temporary and basic discouragement
+        // to viewing the page, not absolute security.
+        const hashedUserPassword = CryptoJS.enc.Hex.stringify(CryptoJS.SHA3(password + salt, { outputLength: 256 }));
+        console.log(hashedUserPassword)
+
+        if (hashedUserPassword === hashedExpectedPassword) {
+            $(".content").removeClass("hidden");
+            $("#auth__error").text("");
+            $("#auth").addClass("hidden");
+            localStorage.setItem("auth", hashedUserPassword)
+            init();
+        } else {
+            $("#auth__password-input").val("");
+            $("#auth__error").text("Error: incorrect password.");
+        }
+
+    })
+
+
+    function init() {
+        window.openModal = function (e, url, name) {
+
+            let title;
+            if (name === undefined && e !== undefined) {
+                title = (e.tagName === 'A' ? title = e.innerHTML : e.attributes.alt.nodeValue);
+            }
+            else {
+                title = name;
+            }
+            $('#myModalLabel').html(title);
+            $('#ifr').attr('src', url);
+            $('#mdlk').attr('href', url.replace("/mobilebasic", "/"));
+            $('#myModal').modal('show');
+        }
+
+        window.requestFullScreen = function () {
+            let el = document.getElementById("ifr");
+            // Supports most browsers and their versions.
+            let requestMethod = el.requestFullScreen || el.webkitRequestFullScreen || el.mozRequestFullScreen || el.msRequestFullScreen;
+
+            if (requestMethod) {
+                requestMethod.call(el);
+                // Older IE.
+            }
+            else if (typeof window.ActiveXObject !== "undefined") {
+                let wscript = new ActiveXObject("WScript.Shell");
+
+                if (wscript !== null) {
+                    wscript.SendKeys("{F11}");
+                }
             }
         }
-    })
+        $("#upload-file-btn").click(() => {
+            let url = $("#upload-file-url").val();
+            let name = $("#upload-file-name").val();
+            let el;
+            if (url.match(/^(https:\/\/((docs\.google\.com\/document\/d\/.+\/.*)?)|(https:\/\/.+\..+.+\.pdf))$/g)) {
+                el = encodeURIComponent('<li><a onclick="openModal(this, ' + "'" + url.replace("/edit", "/moiblebasic") + "'" + ')">' + name + '</a></li>');
+            }
+            else {
+                el = encodeURIComponent('<li><a href="' + url + '">' + name + "</a></li>");
+            }
+
+            firebase.database().ref("/files/").push(el);
+            window.location.href = window.location.href;
+        });
+        firebase.database().ref("/files/").once("value").then((snapshot) => {
+            let data = snapshot.val();
+            for (let key in data) {
+                if (data.hasOwnProperty(key)) {
+                    console.log(data[key]);
+                    //TODO: fix XSS risk
+                    $("#files-box").append($(decodeURIComponent(data[key])).attr("target", "_blank"))
+                }
+            }
+        })
+    }
 </script> {% endblock %}

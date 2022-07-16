@@ -7,21 +7,46 @@
 <div class="container" id="content">
 
     <div class="row">
-        <div class="box">
+        <div class="box col-md-12" id="auth">
+            <hr>
+            <h2 class="intro-text text-center">Pictures</h2>
+            <hr>
+            <p><b>Enter the password to view this page:</b></p>
+            <input class="form-control" type="password" id="auth__password-input"/>
+            <button class="btn btn-block btn-primary" id="auth__submit">Submit</button>
+            <p class="text-danger" id="auth__error"></p>
+            <p>The password is the same as the password to the directory, and is pinned to #general on slack.
+            </p>
+        </div>
+        <div class="box content hidden">
             <div class="col-lg-12">
                 <hr>
                 <h2 class="intro-text text-center">Pictures</h2>
                 <hr>
             </div>
             <div class="col-md-12">
+                <p><a onclick="localStorage.removeItem('auth'); window.location.reload()">Logout</a></p>
                 <!--googleoff: all-->
                 <p>Google Photos</p>
                 <p>
+                    2021:
+                <ul>
+                <li><a target="_blank" href="https://photos.app.goo.gl/CShEChsvkshfpPJD7 ">10/2/2021 to 10/3/2021 - Family Camp 2021 at Mt. Madonna County Park</a></li>
+                <li><a target="_blank" href="https://photos.app.goo.gl/7GUpLroTXrFDEkJp6">9/18/2021 to 9/25/2021 - Popcorn Sales 2021 at 850 El Paseo de Saratoga, San Jose, CA 95130</a></li>
+                <li><a target="_blank" href="https://photos.app.goo.gl/eHupNk5RVsp4M7F48">9/18/2021 to 9/18/2021 - Trailside Cleanup at Chesbro Reservoir County Park</a></li>
+                <li><a target="_blank" href="https://photos.app.goo.gl/eTUuJ1JqP18EkDbB9">9/4/2021 to 9/5/2021 - Henry Coe Backpacking at Henry Coe State Park</a></li>
+                <li><a target="_blank" href="https://photos.app.goo.gl/a48d5GBZTSQGxbdY9">8/13/2021 to 8/14/2021 - Kids Fun Festival at Memorial Park</a></li>
+
+                <li><a target="_blank" href="https://photos.app.goo.gl/EnwvbXvNrgYKZ42S7">6/20/21 to 6/26/21 - Summer Camp at Camp Fleischmann</a></li>
+                    <li><a target="_blank" href="https://photos.app.goo.gl/sKBGtMuE6EzASmd7A">5/2/21 - Court of Honor at Jollyman Park</a></li>
+                    <li><a target="_blank" href="https://photos.app.goo.gl/GuwKnbFJVGxqkkbEA">1/9/21 - TLT (Virtual)</a></li>
+                </ul>
+                <p>
                     2020:
                 <ul>
-                <li><a targer="_blank" href="https://photos.app.goo.gl/XhKuKqN6VXUdVgAU6">12/19/20 - Rim of the Bay</a></li>
-                <li><a targer="_blank" href="https://photos.app.goo.gl/zFGaSrp4uVHkQ9wY6">11/27/20, 11/28/20, 11/29/20 - Christmas in the Parking Lot</a></li>
-                <li><a targer="_blank" href="https://photos.app.goo.gl/TeidFwWn2frnaQ6YA">11/21/20 - Court of Honor</a></li>
+                <li><a target="_blank" href="https://photos.app.goo.gl/XhKuKqN6VXUdVgAU6">12/19/20 - Rim of the Bay</a></li>
+                <li><a target="_blank" href="https://photos.app.goo.gl/zFGaSrp4uVHkQ9wY6">11/27/20 to 11/29/20 - Christmas in the Parking Lot</a></li>
+                <li><a target="_blank" href="https://photos.app.goo.gl/TeidFwWn2frnaQ6YA">11/21/20 - Court of Honor</a></li>
                 <li>Patrol Camp / Outing in Fall 2020:
                     <ul>
                         <li><a target="_blank" href="https://photos.app.goo.gl/AtvFjsicTJ4SRAjb9">
@@ -284,7 +309,45 @@
 </div>
 {% endblock %}
 {% block js %}
+<script src="{{basepath}}js/crypto.min.js"></script>
 <script>
+    $("#auth__password-input").on('keypress',function(e) {
+        if(e.which === 13) {
+            $("#auth__submit").click();
+        }
+    });
 
+    const hashedExpectedPassword = "c3431e1fc2ee61a90f396bd35eaa5c6af0642cf43027d9e3f04df3319a7ea4c8";
+
+    $(document).ready(() => {
+        const authHash = localStorage.getItem("auth");
+        if (authHash && authHash === hashedExpectedPassword) {
+            $(".content").removeClass("hidden");
+            $("#auth__error").text("");
+            $("#auth").addClass("hidden");
+            init();
+        }
+    });
+
+    $("#auth__submit").click((e) => {
+        e.preventDefault();
+        let password = $("#auth__password-input").val();
+        const salt = "pTXA8vnHm";
+        // yes, it's not secure to list the hashed passwords here, but this is meant to provide temporary and basic discouragement
+        // to viewing the page, not absolute security.
+        const hashedUserPassword = CryptoJS.enc.Hex.stringify(CryptoJS.SHA3(password + salt, { outputLength: 256 }));
+        console.log(hashedUserPassword)
+
+        if (hashedUserPassword === hashedExpectedPassword) {
+            $(".content").removeClass("hidden");
+            $("#auth__error").text("");
+            $("#auth").addClass("hidden");
+            localStorage.setItem("auth", hashedUserPassword)
+        } else {
+            $("#auth__password-input").val("");
+            $("#auth__error").text("Error: incorrect password.");
+        }
+
+    })
 </script>
 {% endblock %}
